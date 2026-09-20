@@ -60,7 +60,8 @@ def call_llm(system_prompt: str, user_message: str) -> str:
     if LLM_PROVIDER == "openai":
         from openai import OpenAI
 
-        response = OpenAI().responses.create(
+        client = OpenAI()
+        response = client.responses.create(
             model=LLM_MODEL,
             instructions=system_prompt,
             input=user_message,
@@ -73,7 +74,10 @@ def call_llm(system_prompt: str, user_message: str) -> str:
         from google import genai
         from google.genai import types
 
-        response = genai.Client().models.generate_content(
+        # Giu reference toi client: neu de genai.Client() lam bien tam thi no
+        # bi garbage collect va dong httpx session truoc khi request gui di.
+        client = genai.Client()
+        response = client.models.generate_content(
             model=LLM_MODEL,
             contents=user_message,
             config=types.GenerateContentConfig(
@@ -87,7 +91,8 @@ def call_llm(system_prompt: str, user_message: str) -> str:
     if LLM_PROVIDER == "anthropic":
         from anthropic import Anthropic
 
-        response = Anthropic().messages.create(
+        client = Anthropic()
+        response = client.messages.create(
             model=LLM_MODEL,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}],

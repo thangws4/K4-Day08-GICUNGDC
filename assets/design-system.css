@@ -1,0 +1,324 @@
+/* Design system cho chatbot luật giao thông.
+ * Token lấy từ .claude/skills/design-system/SKILL.md.
+ * Chỉ dùng semantic token trong phần component, không viết hex trực tiếp. */
+
+:root {
+  /* Typography */
+  --ds-font-family: anthropic-sans, system-ui, "Segoe UI", Roboto, Helvetica,
+    Arial, "Noto Sans", sans-serif;
+  --ds-font-size-xs: 13px;
+  --ds-font-size-sm: 14px;
+  --ds-font-size-md: 16px;
+  --ds-font-weight-base: 400;
+  --ds-font-weight-strong: 600;
+  --ds-line-height-base: 20px;
+
+  /* Surface & text */
+  --ds-text-primary: #0b0b0b;
+  --ds-text-secondary: #52514e;
+  --ds-text-tertiary: #898781;
+  --ds-text-inverse: #fcfcfb;
+  --ds-surface-inverse: #000000;
+  --ds-surface-muted: #ffffff;
+  --ds-surface-raised: #fcfcfb;
+  --ds-surface-strong: #fafaf9;
+  --ds-border-default: rgba(11, 11, 11, 0.1);
+  --ds-border-strong: rgba(11, 11, 11, 0.22);
+  --ds-focus-ring: #256abf;
+
+  /* Spacing */
+  --ds-space-1: 0.5px;
+  --ds-space-2: 2px;
+  --ds-space-3: 4px;
+  --ds-space-4: 8px;
+  --ds-space-5: 10px;
+  --ds-space-6: 12px;
+
+  /* Radius */
+  --ds-radius-xs: 5px;
+  --ds-radius-sm: 6px;
+  --ds-radius-md: 7px;
+  --ds-radius-lg: 8px;
+  --ds-radius-xl: 14px;
+
+  /* Elevation */
+  --ds-shadow-1: rgba(11, 11, 11, 0.1) 0 0 0 1px inset,
+    rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+  --ds-shadow-2: rgba(11, 11, 11, 0.1) 0 0 0 1px;
+
+  /* Motion */
+  --ds-duration-instant: 60ms;
+  --ds-duration-fast: 450ms;
+
+  /* Badge tints, dẫn xuất từ token nền/viền để không sinh hex lẻ */
+  --ds-badge-legal-text: #1c4f8f;
+  --ds-badge-legal-surface: rgba(37, 106, 191, 0.1);
+  --ds-badge-news-text: #1a6b3f;
+  --ds-badge-news-surface: rgba(26, 107, 63, 0.1);
+  --ds-badge-neutral-text: var(--ds-text-secondary);
+  --ds-badge-neutral-surface: rgba(11, 11, 11, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ds-text-primary: #fcfcfb;
+    --ds-text-secondary: #b6b4ae;
+    --ds-text-tertiary: #898781;
+    --ds-text-inverse: #0b0b0b;
+    --ds-surface-inverse: #ffffff;
+    --ds-surface-muted: #0b0b0b;
+    --ds-surface-raised: #171716;
+    --ds-surface-strong: #1f1f1d;
+    --ds-border-default: rgba(252, 252, 251, 0.14);
+    --ds-border-strong: rgba(252, 252, 251, 0.28);
+    --ds-focus-ring: #7aa9e8;
+
+    --ds-shadow-1: rgba(252, 252, 251, 0.12) 0 0 0 1px inset,
+      rgba(0, 0, 0, 0.4) 0 1px 2px 0;
+    --ds-shadow-2: rgba(252, 252, 251, 0.14) 0 0 0 1px;
+
+    --ds-badge-legal-text: #9dc0ef;
+    --ds-badge-legal-surface: rgba(122, 169, 232, 0.16);
+    --ds-badge-news-text: #86d0a6;
+    --ds-badge-news-surface: rgba(134, 208, 166, 0.16);
+    --ds-badge-neutral-surface: rgba(252, 252, 251, 0.1);
+  }
+}
+
+/* ---------- Foundations ---------- */
+
+html,
+body,
+[data-testid="stAppViewContainer"] {
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-base);
+  line-height: var(--ds-line-height-base);
+}
+
+/* Focus-visible bắt buộc hiển thị rõ, không được ẩn (WCAG 2.2 AA). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ds-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-xs);
+}
+
+/* ---------- Source card ---------- */
+
+.ds-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-6);
+  margin-bottom: var(--ds-space-4);
+  background: var(--ds-surface-raised);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-1);
+  transition: box-shadow var(--ds-duration-instant) ease-out,
+    background var(--ds-duration-instant) ease-out;
+}
+
+.ds-source:hover {
+  background: var(--ds-surface-strong);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.ds-source:focus-within {
+  box-shadow: var(--ds-shadow-2);
+}
+
+.ds-source--error {
+  box-shadow: rgba(176, 42, 42, 0.45) 0 0 0 1px;
+}
+
+.ds-source__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-4);
+}
+
+.ds-source__title {
+  margin: 0;
+  font-size: var(--ds-font-size-md);
+  font-weight: var(--ds-font-weight-strong);
+  line-height: 1.35;
+  color: var(--ds-text-primary);
+  /* Tiêu đề văn bản luật rất dài: giới hạn 2 dòng, giữ nhịp thẻ đều nhau. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ds-source__origin {
+  margin: 0;
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.ds-source__snippet {
+  margin: 0;
+  font-size: var(--ds-font-size-xs);
+  line-height: var(--ds-line-height-base);
+  color: var(--ds-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.ds-source__empty {
+  margin: 0;
+  font-size: var(--ds-font-size-xs);
+  font-style: italic;
+  color: var(--ds-text-tertiary);
+}
+
+.ds-source__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-5);
+}
+
+/* ---------- Badge ---------- */
+
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-font-weight-strong);
+  line-height: 1.4;
+  border-radius: var(--ds-radius-xs);
+  background: var(--ds-badge-neutral-surface);
+  color: var(--ds-badge-neutral-text);
+  white-space: nowrap;
+}
+
+.ds-badge--legal {
+  background: var(--ds-badge-legal-surface);
+  color: var(--ds-badge-legal-text);
+}
+
+.ds-badge--news {
+  background: var(--ds-badge-news-surface);
+  color: var(--ds-badge-news-text);
+}
+
+.ds-score {
+  font-size: var(--ds-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-tertiary);
+}
+
+/* ---------- Link & action ---------- */
+
+.ds-link {
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-focus-ring);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--ds-duration-instant) ease-out;
+}
+
+.ds-link:hover,
+.ds-link:active {
+  border-bottom-color: var(--ds-focus-ring);
+}
+
+.ds-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-5);
+  font-family: inherit;
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-font-weight-strong);
+  color: var(--ds-text-secondary);
+  background: var(--ds-surface-muted);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-sm);
+  cursor: pointer;
+  transition: border-color var(--ds-duration-instant) ease-out,
+    color var(--ds-duration-instant) ease-out;
+}
+
+.ds-action:hover {
+  color: var(--ds-text-primary);
+  border-color: var(--ds-border-strong);
+}
+
+.ds-action:active {
+  background: var(--ds-surface-strong);
+}
+
+.ds-action[disabled],
+.ds-action[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ds-action[data-state="done"] {
+  color: var(--ds-badge-news-text);
+  border-color: var(--ds-badge-news-text);
+}
+
+.ds-action[data-state="error"] {
+  color: #b02a2a;
+  border-color: #b02a2a;
+}
+
+/* ---------- Streamlit surfaces ---------- */
+
+[data-testid="stChatMessage"] {
+  padding: var(--ds-space-6);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-surface-raised);
+}
+
+[data-testid="stChatInput"] {
+  border-radius: var(--ds-radius-xl);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .ds-source {
+    padding: var(--ds-space-5);
+  }
+
+  .ds-source__title {
+    font-size: var(--ds-font-size-sm);
+  }
+
+  .ds-source__actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-source,
+  .ds-action,
+  .ds-link {
+    transition: none;
+  }
+}
+
+/* ---------- Screen-reader only ---------- */
+
+/* Vùng aria-live thông báo kết quả sao chép cho trình đọc màn hình. */
+.ds-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

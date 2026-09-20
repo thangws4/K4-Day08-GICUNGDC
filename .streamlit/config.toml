@@ -1,0 +1,32 @@
+# Theme native theo design system trong .claude/skills/design-system/SKILL.md.
+# Token nào Streamlit hỗ trợ sẵn thì khai ở đây; phần còn lại (component rules,
+# state, focus-visible) nằm trong assets/design-system.css.
+#
+# Lưu ý về token: SKILL.md khai color.surface.base=#000000 trong khi
+# color.text.primary=#0b0b0b. Dùng nền đen với chữ gần đen sẽ vi phạm chính
+# rule "không cho phép chữ contrast thấp", nên nền trang lấy theo
+# color.surface.muted (#ffffff) và surface.base chỉ dùng cho bề mặt đảo màu.
+
+[theme]
+font = "sans-serif"
+baseFontSize = 14
+baseFontWeight = 400
+baseRadius = "7px"        # radius.md
+buttonRadius = "6px"      # radius.sm
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#256abf"             # color.focus.ring
+backgroundColor = "#ffffff"          # color.surface.muted
+secondaryBackgroundColor = "#fcfcfb" # color.surface.raised
+textColor = "#0b0b0b"                # color.text.primary
+borderColor = "#e6e6e4"              # color.border.default (đã flatten alpha)
+linkColor = "#256abf"
+
+[theme.dark]
+primaryColor = "#7aa9e8"
+backgroundColor = "#0b0b0b"          # color.surface.base, đảo cho dark mode
+secondaryBackgroundColor = "#171716"
+textColor = "#fcfcfb"
+borderColor = "#2a2a28"
+linkColor = "#9dc0ef"

@@ -50,8 +50,15 @@ TITLE_PATTERN = re.compile(r"^#\s+(.+)$", re.MULTILINE)
 FIELD_PATTERN = re.compile(r"^\*\*(.+?):\*\*\s*(.*)$", re.MULTILINE)
 HEADER_SEPARATOR = "\n---\n"
 
-# Tách ưu tiên theo ranh giới điều luật để một điều không bị cắt ngang.
-SEPARATORS = ["\nĐiều ", "\n\n", "\n", ". ", " ", ""]
+SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
+
+# Văn bản được cắt theo từng điều trước, rồi mới chia nhỏ trong phạm vi điều đó.
+# Mỗi chunk được gắn lại tiêu đề điều luật cha vì nếu không, chunk chứa mức phạt
+# ("Phạt tiền từ 6.000.000 đồng...") không còn cho biết nó áp cho loại xe nào —
+# LLM buộc phải từ chối trả lời dù bằng chứng nằm ngay trong context.
+ARTICLE_PATTERN = re.compile(r"^(Điều\s+\d+[a-zđ]?\..*)$", re.MULTILINE)
+HEADING_MAX_CHARS = 150
+MIN_BODY_CHARS = 200
 
 _model_cache: dict[str, object] = {}
 
@@ -156,29 +163,68 @@ def load_documents() -> list[dict]:
     return documents
 
 
+def split_by_article(content: str) -> list[tuple[str | None, str]]:
+    """Cắt nội dung thành từng điều luật, trả về (tiêu đề điều, nội dung)."""
+    matches = list(ARTICLE_PATTERN.finditer(content))
+    if not matches:
+        return [(None, content)]
+
+    sections: list[tuple[str | None, str]] = []
+    if matches[0].start() > 0:
+        # Phần trước Điều 1 (căn cứ ban hành, tiêu đề văn bản) không có điều cha.
+        sections.append((None, content[: matches[0].start()]))
+
+    for order, match in enumerate(matches):
+        end = matches[order + 1].start() if order + 1 < len(matches) else len(content)
+        sections.append((match.group(1).strip(), content[match.start() : end]))
+
+    return sections
+
+
+def article_prefix(heading: str | None) -> str:
+    """Tiêu đề điều luật rút gọn để gắn vào đầu chunk."""
+    if not heading:
+        return ""
+    if len(heading) <= HEADING_MAX_CHARS:
+        return heading
+    return heading[:HEADING_MAX_CHARS].rstrip() + "…"
+
+
 def chunk_documents(documents: list[dict]) -> list[dict]:
     """Chia Document thành chunks có id và chunk_index."""
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        separators=SEPARATORS,
-        # Giữ lại "Điều N." ở đầu chunk, nếu không separator bị cắt mất chữ.
-        keep_separator=True,
-    )
+    def make_splitter(size: int) -> RecursiveCharacterTextSplitter:
+        return RecursiveCharacterTextSplitter(
+            chunk_size=size,
+            chunk_overlap=min(CHUNK_OVERLAP, size // 4),
+            separators=SEPARATORS,
+            keep_separator=True,
+        )
 
     chunks = []
     for document in documents:
-        pieces = [text.strip() for text in splitter.split_text(document["content"])]
-        for index, text in enumerate(piece for piece in pieces if piece):
-            chunks.append(
-                {
-                    "id": f"{document['id']}::chunk-{index}",
-                    "content": text,
-                    "metadata": {**document["metadata"], "chunk_index": index},
-                }
-            )
+        index = 0
+        for heading, section in split_by_article(document["content"]):
+            prefix = article_prefix(heading)
+            # Trừ chỗ cho tiêu đề để chunk cuối cùng vẫn nằm trong CHUNK_SIZE.
+            body_size = max(CHUNK_SIZE - len(prefix) - 1, MIN_BODY_CHARS)
+
+            for piece in make_splitter(body_size).split_text(section):
+                text = piece.strip()
+                if not text:
+                    continue
+                if prefix and not text.startswith("Điều "):
+                    text = f"{prefix}\n{text}"
+
+                chunks.append(
+                    {
+                        "id": f"{document['id']}::chunk-{index}",
+                        "content": text,
+                        "metadata": {**document["metadata"], "chunk_index": index},
+                    }
+                )
+                index += 1
 
     return chunks
 
